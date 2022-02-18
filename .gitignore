@@ -21,3 +21,11 @@ mgrx/tgsvg.svg
 # Others
 svgexpls
 .directory
+# Vim
+*.swp
+*.swo
+*.vim
+# Build Directory
+build/*
+build.*/*
+
