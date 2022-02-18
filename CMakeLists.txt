@@ -17,6 +17,7 @@ set(msvg_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/src/serializ.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tables.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tcookel.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tmatrix.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/util.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wtsvgf.c
 )
