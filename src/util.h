@@ -25,6 +25,14 @@
  *
  */
 
+#ifndef MSVG_UTIL_H
+#define MSVG_UTIL_H
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /* how many numbers in string? */
 int MsvgI_count_numbers(char *s);
 
@@ -33,3 +41,10 @@ int MsvgI_read_numbers(char *s, double *df, int maxnumbers);
 
 /*remove spaces before and after, note: s is modifies */
 char * MsvgI_rmspaces(char *s);
+
+#ifdef __cplusplus
+extern "C"
+}
+#endif
+
+#endif /* MSVG_UTIL_H */
