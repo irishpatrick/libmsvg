@@ -28,6 +28,11 @@
 #ifndef __MSVG_H_INCLUDED__
 #define __MSVG_H_INCLUDED__
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <stdio.h>
 
 #define LIBMSVG_VERSION_API 0x0021
@@ -426,5 +431,9 @@ MsvgTableId * MsvgBuildTableIdCookedTree(MsvgElement *el);
 MsvgTableId * MsvgBuildTableIdRawTree(MsvgElement *el);
 void MsvgDestroyTableId(MsvgTableId *tid);
 MsvgElement *MsvgFindIdTableId(MsvgTableId *tid, char *id);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  /* whole file */
