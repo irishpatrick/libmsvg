@@ -101,6 +101,8 @@ static char * printcolor(rgbcolor color)
         sprintf(s, "INHERIT_COLOR");
     else if (color == NODEFINED_COLOR)
         sprintf(s, "NODEFINED_COLOR");
+    else if (color == IRI_COLOR)
+        sprintf(s, "IRI_COLOR");
     else
         sprintf(s, "#%06x", color);
     
@@ -138,8 +140,12 @@ static char * printivalue(int value)
 void MsvgPrintPctx(FILE *f, MsvgPaintCtx *pctx)
 {
     fprintf(f, "  fill           %s\n", printcolor(pctx->fill));
+    if (pctx->fill_iri)
+        fprintf(f, "  fill_iri       %s\n", pctx->fill_iri);
     fprintf(f, "  fill_opacity   %s\n", printdvalue(pctx->fill_opacity));
     fprintf(f, "  stroke         %s\n", printcolor(pctx->stroke));
+    if (pctx->stroke_iri)
+        fprintf(f, "  stroke_iri     %s\n", pctx->stroke_iri);
     fprintf(f, "  stroke_width   %s\n", printdvalue(pctx->stroke_width));
     fprintf(f, "  stroke_opacity %s\n", printdvalue(pctx->stroke_opacity));
     fprintf(f, "  tmatrix        (%g %g %g %g %g %g)\n",
@@ -262,6 +268,38 @@ static void printTextCookedAttr(FILE *f, MsvgElement *el)
     fprintf(f, "  y              %g\n", el->ptextattr->y);
 }
 
+static void printLinearGradientCookedAttr(FILE *f, MsvgElement *el)
+{
+    if (el->plgradattr->gradunits == GRADUNIT_USER)
+        fprintf(f, "  gradientUnits  %s\n", "GRADUNIT_USER");
+    else
+        fprintf(f, "  gradientUnits  %s\n", "GRADUNIT_BBOX");
+
+    fprintf(f, "  x1             %g\n", el->plgradattr->x1);
+    fprintf(f, "  y1             %g\n", el->plgradattr->y1);
+    fprintf(f, "  x2             %g\n", el->plgradattr->x2);
+    fprintf(f, "  y2             %g\n", el->plgradattr->y2);
+}
+
+static void printRadialGradientCookedAttr(FILE *f, MsvgElement *el)
+{
+    if (el->prgradattr->gradunits == GRADUNIT_USER)
+        fprintf(f, "  gradientUnits  %s\n", "GRADUNIT_USER");
+    else
+        fprintf(f, "  gradientUnits  %s\n", "GRADUNIT_BBOX");
+
+    fprintf(f, "  cx             %g\n", el->prgradattr->cx);
+    fprintf(f, "  cy             %g\n", el->prgradattr->cy);
+    fprintf(f, "  r              %g\n", el->prgradattr->r);
+}
+
+static void printStopCookedAttr(FILE *f, MsvgElement *el)
+{
+    fprintf(f, "  offset         %g\n", el->pstopattr->offset);
+    fprintf(f, "  stop-opacity   %s\n", printdvalue(el->pstopattr->sopacity));
+    fprintf(f, "  stop-color     %s\n", printcolor(el->pstopattr->scolor));
+}
+
 static void printVContentCookedAttr(FILE *f, MsvgElement *el)
 {
     return;
@@ -312,6 +350,15 @@ void MsvgPrintCookedElement(FILE *f, MsvgElement *el)
         case EID_TEXT :
             printTextCookedAttr(f, el);
             break;
+        case EID_LINEARGRADIENT :
+            printLinearGradientCookedAttr(f, el);
+            break;
+        case EID_RADIALGRADIENT :
+            printRadialGradientCookedAttr(f, el);
+            break;
+        case EID_STOP :
+            printStopCookedAttr(f, el);
+            break;
         case EID_V_CONTENT :
             printVContentCookedAttr(f, el);
             break;
@@ -319,6 +366,8 @@ void MsvgPrintCookedElement(FILE *f, MsvgElement *el)
             break;
     }
 
-    fprintf(f, "  --------- element MsvgPaintCtx\n");
-    MsvgPrintPctx(f, &el->pctx);
+    if (el->pctx) {
+        fprintf(f, "  --------- element MsvgPaintCtx\n");
+        MsvgPrintPctx(f, el->pctx);
+    }
 }

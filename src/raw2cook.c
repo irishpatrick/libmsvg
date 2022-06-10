@@ -2,7 +2,8 @@
  * 
  * libmsvg, a minimal library to read and write svg files
  *
- * Copyright (C) 2010, 2020 Mariano Alvarez Fernandez (malfer at telefonica.net)
+ * Copyright (C) 2010, 2020-2022 Mariano Alvarez Fernandez
+ * (malfer at telefonica.net)
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -65,6 +66,33 @@ static rgbcolor colortorgb(char *color)
         }
     } // TODO: support rgb(r,g,b)
     else return NO_COLOR;
+}
+
+static void getcolorattr(char *value, rgbcolor *rgb, char **iri)
+{
+    char *start, *end, *viri;
+    int irilen, i;
+    
+    if (strncmp(value, "url(#", 5) == 0) {
+        *iri = NULL;
+        *rgb = NODEFINED_COLOR;
+        start = &value[5];
+        end = strchr(start, ')');
+        if (end) {
+            irilen = end - start;
+            viri = calloc(1, irilen+1);
+            if (viri) {
+                for (i=0; i<irilen; i++) viri[i] = start[i];
+                start[irilen] = '\0';
+                *iri = viri;
+                *rgb = IRI_COLOR;
+            }
+        }
+    }
+    else {
+        *iri = NULL;
+        *rgb = colortorgb(value);
+    }
 }
 
 static double lengthof(char *value)
@@ -200,20 +228,34 @@ static double fontsize(char *value)
 
 static int cookPCtxAttr(MsvgElement *el, char *key, char *value)
 {
-    if (strcmp(key, "id") == 0) el->id = strdup(value);
-    else if (strcmp(key, "xml:id") == 0) el->id = strdup(value);
-    else if (strcmp(key, "fill") == 0) el->pctx.fill = colortorgb(value);
-    else if (strcmp(key, "fill-opacity") == 0) el->pctx.fill_opacity = opacitytof(value);
-    else if (strcmp(key, "stroke") == 0) el->pctx.stroke = colortorgb(value);
-    else if (strcmp(key, "stroke-width") == 0) el->pctx.stroke_width = widthtof(value);
-    else if (strcmp(key, "stroke-opacity") == 0) el->pctx.stroke_opacity = opacitytof(value);
-    else if (strcmp(key, "transform") == 0) gettmatrix(value, &(el->pctx.tmatrix));
-    else if (strcmp(key, "font-family") == 0) el->pctx.font_family = fontfamily(value);
-    else if (strcmp(key, "font-style") == 0) el->pctx.font_style = fontstyle(value);
-    else if (strcmp(key, "font-weight") == 0) el->pctx.font_weight = fontweight(value);
-    else if (strcmp(key, "font-size") == 0) el->pctx.font_size = fontsize(value);
-    else return 0;
-    return 1;
+    if (strcmp(key, "id") == 0 || strcmp(key, "xml:id") == 0) {
+        if (el->id) free(el->id);
+        el->id = strdup(value);
+        return 1;
+    }
+
+    if (el->pctx) {
+        if (strcmp(key, "fill") == 0) {
+            if (el->pctx->fill_iri) free(el->pctx->fill_iri);
+            getcolorattr(value, &(el->pctx->fill), &(el->pctx->fill_iri));
+        }
+        else if (strcmp(key, "fill-opacity") == 0) el->pctx->fill_opacity = opacitytof(value);
+        else if (strcmp(key, "stroke") == 0) {
+            if (el->pctx->stroke_iri) free(el->pctx->stroke_iri);
+            getcolorattr(value, &(el->pctx->stroke), &(el->pctx->stroke_iri));
+        }
+        else if (strcmp(key, "stroke-width") == 0) el->pctx->stroke_width = widthtof(value);
+        else if (strcmp(key, "stroke-opacity") == 0) el->pctx->stroke_opacity = opacitytof(value);
+        else if (strcmp(key, "transform") == 0) gettmatrix(value, &(el->pctx->tmatrix));
+        else if (strcmp(key, "font-family") == 0) el->pctx->font_family = fontfamily(value);
+        else if (strcmp(key, "font-style") == 0) el->pctx->font_style = fontstyle(value);
+        else if (strcmp(key, "font-weight") == 0) el->pctx->font_weight = fontweight(value);
+        else if (strcmp(key, "font-size") == 0) el->pctx->font_size = fontsize(value);
+        else return 0;
+        return 1;
+    }
+
+    return 0;
 }
 
 static void cookSvgGenAttr(MsvgElement *el, char *key, char *value)
@@ -325,6 +367,38 @@ static void cookTextGenAttr(MsvgElement *el, char *key, char *value)
     else if (strcmp(key, "y") == 0) el->ptextattr->y = atof(value);
 }
 
+static void cookLinearGradientGenAttr(MsvgElement *el, char *key, char *value)
+{
+    if (strcmp(key, "gradientUnits") == 0) {
+        if (strcmp(value, "userSpaceOnUse"))
+            el->plgradattr->gradunits = GRADUNIT_USER;
+        else
+            el->plgradattr->gradunits = GRADUNIT_BBOX;
+    } else if (strcmp(key, "x1") == 0) el->plgradattr->x1 = atof(value);
+    else if (strcmp(key, "y1") == 0) el->plgradattr->y1 = atof(value);
+    else if (strcmp(key, "x2") == 0) el->plgradattr->x2 = atof(value);
+    else if (strcmp(key, "y2") == 0) el->plgradattr->y2 = atof(value);
+}
+
+static void cookRadialGradientGenAttr(MsvgElement *el, char *key, char *value)
+{
+    if (strcmp(key, "gradientUnits") == 0) {
+        if (strcmp(value, "userSpaceOnUse"))
+            el->prgradattr->gradunits = GRADUNIT_USER;
+        else
+            el->prgradattr->gradunits = GRADUNIT_BBOX;
+    } else if (strcmp(key, "cx") == 0) el->prgradattr->cx = atof(value);
+    else if (strcmp(key, "cy") == 0) el->prgradattr->cy = atof(value);
+    else if (strcmp(key, "r") == 0) el->prgradattr->r = atof(value);
+}
+
+static void cookStopGenAttr(MsvgElement *el, char *key, char *value)
+{
+    if (strcmp(key, "offset") == 0) el->pstopattr->offset = atof(value);
+    else if (strcmp(key, "stop-opacity") == 0) el->pstopattr->sopacity = opacitytof(value);
+    else if (strcmp(key, "stop-color") == 0) el->pstopattr->scolor = colortorgb(value);
+}
+
 static void cookVContentGenAttr(MsvgElement *el, char *key, char *value)
 {
     return;
@@ -419,6 +493,15 @@ static void cookElement(MsvgElement *el, int depth)
                 case EID_TEXT :
                     cookTextGenAttr(el, pattr->key, pattr->value);
                     break;
+                case EID_LINEARGRADIENT :
+                    cookLinearGradientGenAttr(el, pattr->key, pattr->value);
+                    break;
+                case EID_RADIALGRADIENT :
+                    cookRadialGradientGenAttr(el, pattr->key, pattr->value);
+                    break;
+                case EID_STOP :
+                    cookStopGenAttr(el, pattr->key, pattr->value);
+                    break;
                 case EID_V_CONTENT :
                     cookVContentGenAttr(el, pattr->key, pattr->value);
                     break;
@@ -465,6 +548,15 @@ static void cookElement(MsvgElement *el, int depth)
             break;
         case EID_TEXT :
             //checkTextCookedAttr(el);
+            break;
+        case EID_LINEARGRADIENT :
+            //checkLinearGradientAttr(el);
+            break;
+        case EID_RADIALGRADIENT :
+            //checkRadialGradientAttr(el);
+            break;
+        case EID_STOP :
+            //checkStopAttr(el);
             break;
         case EID_V_CONTENT :
             //checkVContentCookedAttr(el);
