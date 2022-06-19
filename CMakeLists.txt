@@ -4,11 +4,14 @@ project(msvg)
 
 set(msvg_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/src/attribut.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cokdims.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/content.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cook2raw.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/element.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/find.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/gradnorm.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/manielem.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/paintctx.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/path2ply.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/printree.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/raw2cook.c
